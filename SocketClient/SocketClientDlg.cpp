@@ -206,7 +206,6 @@ void CSocketClientDlg::OnBnClickedButton4()
 	msg_buf = new char[MAX_MSG_LEN];
 
 	sprintf(msg_buf, "%s", "start");
-
 	send(m_client_socket, msg_buf, 256, 0);
 
 	delete(msg_buf);
