@@ -20,7 +20,9 @@
 #include <afxext.h>         // MFC 확장입니다.
 
 
-
+//여기에 헤더 및 progma comment 
+//#include <WinSock2.h>
+//#progma comment(lib, "ws2_32.lib")
 
 
 #ifndef _AFX_NO_OLE_SUPPORT

@@ -16,7 +16,7 @@
 #include <malloc.h> 
 #include <locale.h>
 
-#pragma comment(lib,"ws2_32") 
+#pragma comment(lib,"ws2_32.lib") 
 #pragma warning(disable : 4996) 
 #define PORT_NUM    20001 
 #define MAX_MSG_LEN 256 
@@ -50,7 +50,6 @@ BEGIN_MESSAGE_MAP(CSocketClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON4, &CSocketClientDlg::OnBnClickedButton4)
 END_MESSAGE_MAP()
 
-
 // CSocketClientDlg 메시지 처리기
 
 BOOL CSocketClientDlg::OnInitDialog()
@@ -64,6 +63,7 @@ BOOL CSocketClientDlg::OnInitDialog()
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	m_ip = "127.0.0.1";
+
 	/*GetDlgItem(IDC_BUTTON1)->EnableWindow(false);
 	GetDlgItem(IDC_BUTTON2)->EnableWindow(false);*/
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(false);
@@ -144,8 +144,8 @@ void CSocketClientDlg::OnBnClickedButton1()
 void CSocketClientDlg::OnBnClickedButton2()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	WSADATA wsadata;
-	WSAStartup(MAKEWORD(2, 2), &wsadata);
+	WSADATA temp;
+	WSAStartup(0x0202, &temp);
 
 	m_client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (m_client_socket == -1) {
@@ -159,14 +159,19 @@ void CSocketClientDlg::OnBnClickedButton2()
 	srv_addr.sin_addr.s_addr = inet_addr(buf);
 	srv_addr.sin_port = htons(PORT_NUM);
 
-	int re;
+	WSAAsyncSelect(m_client_socket, m_hWnd, 27001, FD_CONNECT);
+	connect(m_client_socket, (LPSOCKADDR)&srv_addr, sizeof(sockaddr_in));
+
+	//28초 응답없음 상태에 빠질수도 있다. 그래서 비동기를 걸고 connect
+	/*int re;
 	re = connect(m_client_socket, (LPSOCKADDR)&srv_addr, sizeof(sockaddr_in));
 	if (re == -1) {
 		AfxMessageBox(_T("connect 에러"));
 		return;
 	}
-	AfxMessageBox(_T("연결완료"));
-	GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
+	AfxMessageBox(_T("연결완료"));*/
+	/*
+	GetDlgItem(IDC_BUTTON3)->EnableWindow(true);*/
 	return;
 }
 
@@ -186,15 +191,14 @@ void CSocketClientDlg::OnBnClickedButton3()
 
 		send(m_client_socket, msg_buf, 256, 0);
 
-		recv(m_client_socket, msg_buf, 256, 0);
+		/*recv(m_client_socket, msg_buf, 256, 0);
 		if (strcmp("OK", msg_buf) == 0) {
 			GetDlgItem(IDC_BUTTON4)->EnableWindow(true);
 		}
 		else {
 			AfxMessageBox(L"파일열기 실패 다시시도...");
 		}
-		TRACE("%s", msg_buf);
-
+		TRACE("%s", msg_buf);*/
 		delete(msg_buf);
 	}
 }
@@ -209,4 +213,64 @@ void CSocketClientDlg::OnBnClickedButton4()
 	send(m_client_socket, msg_buf, 256, 0);
 
 	delete(msg_buf);
+}
+
+void CSocketClientDlg::ConnectProcess(LPARAM lParam) {
+	if (WSAGETSELECTERROR(lParam) == 0) {//0을 반환은 에러가 없다는것
+		char buf[256];
+		recv(m_client_socket, buf, 256, 0);
+		if (strcmp("OK", buf) == 0) {
+			GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
+			GetDlgItem(IDC_BUTTON4)->EnableWindow(true);
+		}
+		else if (strcmp("NO", buf) == 0) {
+			GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
+			GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+		}
+		WSAAsyncSelect(m_client_socket, m_hWnd, 27002, FD_READ | FD_CLOSE);
+
+		AfxMessageBox(L"서버에 접속했습니다!");
+	}
+	else {
+		closesocket(m_client_socket);
+		m_client_socket = INVALID_SOCKET;
+		//INVALID_SOCKET은 0이아님 반드시 INVALID_SOCKET으로 넣어주자
+		AfxMessageBox(L"서버 접속에 실패했습니다.");
+		//예를 들어서 소켓의 상태에 따라서 처리해주어야되기때문에
+	}
+}
+
+LRESULT CSocketClientDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+{
+	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
+	if (27001 == message) {
+		ConnectProcess(lParam);
+	}
+	else if (message == 27002) {
+		if (WSAGETSELECTEVENT(lParam) == FD_READ) {
+			msg_buf = new char[256];
+
+			recv(m_client_socket, msg_buf, 256, 0);
+
+			if (strcmp("OK", msg_buf) == 0) {
+				GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
+				GetDlgItem(IDC_BUTTON4)->EnableWindow(true);
+			}
+			else if (strcmp("NO", msg_buf) == 0) {
+				GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
+				GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+			}
+			delete(msg_buf);
+		}
+		else{
+			closesocket(m_client_socket);
+			m_client_socket = INVALID_SOCKET;
+			//INVALID_SOCKET은 0이아님 반드시 INVALID_SOCKET으로 넣어주자
+			AfxMessageBox(L"서버에서 연결을 해제하였습니다.");
+			GetDlgItem(IDC_BUTTON3)->EnableWindow(false);
+			GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+			//예를 들어서 소켓의 상태에 따라서 처리해주어야되기때문에
+		}
+	}
+	return CDialogEx::WindowProc(message, wParam, lParam);
 }
