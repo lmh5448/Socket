@@ -48,6 +48,7 @@ BEGIN_MESSAGE_MAP(CSocketClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CSocketClientDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CSocketClientDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON4, &CSocketClientDlg::OnBnClickedButton4)
+	ON_BN_CLICKED(IDC_BUTTON5, &CSocketClientDlg::OnBnClickedButton5)
 END_MESSAGE_MAP()
 
 // CSocketClientDlg 메시지 처리기
@@ -68,6 +69,7 @@ BOOL CSocketClientDlg::OnInitDialog()
 	GetDlgItem(IDC_BUTTON2)->EnableWindow(false);*/
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(false);
 	GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+	GetDlgItem(IDC_BUTTON5)->EnableWindow(false);
 
 	
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -209,7 +211,7 @@ void CSocketClientDlg::OnBnClickedButton4()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	msg_buf = new char[MAX_MSG_LEN];
 
-	sprintf(msg_buf, "%s", "start");
+	sprintf(msg_buf, "%s", "defectstart");
 	send(m_client_socket, msg_buf, 256, 0);
 
 	delete(msg_buf);
@@ -222,10 +224,12 @@ void CSocketClientDlg::ConnectProcess(LPARAM lParam) {
 		if (strcmp("OK", buf) == 0) {
 			GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
 			GetDlgItem(IDC_BUTTON4)->EnableWindow(true);
+			GetDlgItem(IDC_BUTTON5)->EnableWindow(true);
 		}
 		else if (strcmp("NO", buf) == 0) {
 			GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
 			GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+			GetDlgItem(IDC_BUTTON5)->EnableWindow(false);
 		}
 		WSAAsyncSelect(m_client_socket, m_hWnd, 27002, FD_READ | FD_CLOSE);
 
@@ -255,10 +259,12 @@ LRESULT CSocketClientDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			if (strcmp("OK", msg_buf) == 0) {
 				GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
 				GetDlgItem(IDC_BUTTON4)->EnableWindow(true);
+				GetDlgItem(IDC_BUTTON5)->EnableWindow(true);
 			}
 			else if (strcmp("NO", msg_buf) == 0) {
 				GetDlgItem(IDC_BUTTON3)->EnableWindow(true);
 				GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+				GetDlgItem(IDC_BUTTON5)->EnableWindow(false);
 			}
 			delete(msg_buf);
 		}
@@ -269,8 +275,21 @@ LRESULT CSocketClientDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			AfxMessageBox(L"서버에서 연결을 해제하였습니다.");
 			GetDlgItem(IDC_BUTTON3)->EnableWindow(false);
 			GetDlgItem(IDC_BUTTON4)->EnableWindow(false);
+			GetDlgItem(IDC_BUTTON5)->EnableWindow(false);
 			//예를 들어서 소켓의 상태에 따라서 처리해주어야되기때문에
 		}
 	}
 	return CDialogEx::WindowProc(message, wParam, lParam);
+}
+
+
+void CSocketClientDlg::OnBnClickedButton5()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	msg_buf = new char[MAX_MSG_LEN];
+
+	sprintf(msg_buf, "%s", "stainstart");
+	send(m_client_socket, msg_buf, 256, 0);
+
+	delete(msg_buf);
 }

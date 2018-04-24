@@ -43,4 +43,5 @@ public:
 	afx_msg void OnBnClickedButton4();
 	void CSocketClientDlg::ConnectProcess(LPARAM lParam);
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+	afx_msg void OnBnClickedButton5();
 };
